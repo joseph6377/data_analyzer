@@ -8,6 +8,11 @@ import plotly.express as px
 import plotly.graph_objects as go
 import re
 
+# Disable watchdog if in production
+if st.runtime.exists():
+    import os
+    os.environ["STREAMLIT_SERVER_FILE_WATCHER_TYPE"] = "none"
+
 # Load environment variables
 load_dotenv()
 GROQ_API_KEY = os.getenv("GROQ_API_KEY")
