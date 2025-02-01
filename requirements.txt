@@ -1,0 +1,30 @@
+# Core data processing and analysis
+pandas>=2.0.0
+numpy>=1.24.0
+
+# API and environment management
+groq>=0.3.0
+python-dotenv>=1.0.0
+
+# Visualization
+plotly>=5.18.0
+matplotlib>=3.7.0
+seaborn>=0.12.0
+
+# Web interface
+streamlit>=1.30.0
+
+# Data handling
+openpyxl>=3.1.0  # For Excel file support
+pyarrow>=14.0.1  # For efficient data handling
+fastparquet>=2023.10.1  # For parquet file support
+
+# Code execution and formatting
+ipython>=8.0.0
+black>=23.12.0  # For code formatting
+
+# System utilities
+psutil>=5.9.0  # For system monitoring
+
+# Statistical Modeling
+statsmodels>=0.13.5 
