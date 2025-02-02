@@ -13,9 +13,8 @@ if st.runtime.exists():
     import os
     os.environ["STREAMLIT_SERVER_FILE_WATCHER_TYPE"] = "none"
 
-# Load environment variables
+# Load environment variables (if any)
 load_dotenv()
-GROQ_API_KEY = os.getenv("GROQ_API_KEY")
 
 # Initialize session state for chat history if it doesn't exist
 if 'chat_history' not in st.session_state:
@@ -189,9 +188,9 @@ def extract_code_block(text):
         return match.group(1)
     return text
 
-def get_code_from_groq(meta, sample_data, user_query):
+def get_code_from_groq(meta, sample_data, user_query, groq_api_key):
     """Get Python code from Groq API based on user's question"""
-    client = Groq(api_key=GROQ_API_KEY)
+    client = Groq(api_key=groq_api_key)
     
     # Check if visualization is requested
     needs_viz = any(word in user_query.lower() for word in ['visualize', 'plot', 'graph', 'chart', 'show', 'display'])
@@ -298,9 +297,9 @@ def display_chat_history():
             if "figure" in message and message["figure"]:
                 st.plotly_chart(message["figure"], use_container_width=True)
 
-def get_corrected_code_from_groq(error_message, original_code, user_query, meta, sample_data):
+def get_corrected_code_from_groq(error_message, original_code, user_query, meta, sample_data, groq_api_key):
     """Get corrected code from Groq API based on the error"""
-    client = Groq(api_key=GROQ_API_KEY)
+    client = Groq(api_key=groq_api_key)
     
     system_message = {
         "role": "system",
@@ -341,7 +340,7 @@ def get_corrected_code_from_groq(error_message, original_code, user_query, meta,
     response = completion.choices[0].message.content
     return extract_code_block(response)
 
-def try_execute_with_retries(code, df, user_query, meta, sample_data, max_retries=3):
+def try_execute_with_retries(code, df, user_query, meta, sample_data, groq_api_key, max_retries=3):
     """Try to execute code with multiple retries on error"""
     attempt = 1
     last_error = None
@@ -363,7 +362,7 @@ def try_execute_with_retries(code, df, user_query, meta, sample_data, max_retrie
             })
             
             # Get corrected code
-            last_code = get_corrected_code_from_groq(error, last_code, user_query, meta, sample_data)
+            last_code = get_corrected_code_from_groq(error, last_code, user_query, meta, sample_data, groq_api_key)
             
         last_error = error
         attempt += 1
@@ -376,6 +375,15 @@ def main():
     
     # File uploader in sidebar
     with st.sidebar:
+        st.markdown("## Configuration")
+        groq_api_key = st.text_input(
+            "Enter your Groq API Key", 
+            type="password",
+            help="Obtain your Groq API key by signing up at [Groq](https://groq.com) and navigating to the API keys section."
+        )
+        
+        st.markdown("---")
+        
         st.markdown("### File Source")
         uploaded_file = st.file_uploader(
             "Upload your CSV file",
@@ -391,6 +399,11 @@ def main():
             # Data preview
             with st.expander("Preview Data"):
                 st.dataframe(df.head(), use_container_width=True)
+            
+            # Check if Groq API key is provided
+            if not groq_api_key:
+                st.error("Groq API key is required to proceed. Please enter your API key in the sidebar. To obtain an API key, sign up at https://groq.com and navigate to the API keys section.")
+                st.stop()
             
             # Clear chat button
             if st.button("Clear History"):
@@ -440,11 +453,11 @@ def main():
                 # Analysis progress using spinner
                 with st.spinner("Analyzing data..."):
                     # Get initial code from Groq
-                    code, needs_viz = get_code_from_groq(meta, sample_data, user_query)
+                    code, needs_viz = get_code_from_groq(meta, sample_data, user_query, groq_api_key)
                     
                     # Try to execute with retries
                     result, error, fig, final_code, attempts = try_execute_with_retries(
-                        code, df, user_query, meta, sample_data
+                        code, df, user_query, meta, sample_data, groq_api_key
                     )
                 
                 if error:
