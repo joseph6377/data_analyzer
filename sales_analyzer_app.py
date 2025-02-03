@@ -191,9 +191,9 @@ def extract_code_block(text):
         return match.group(1)
     return text
 
-def get_code_from_groq(meta, sample_data, user_query):
+def get_code_from_groq(meta, sample_data, user_query, groq_api_key):
     """Get Python code from Groq API based on user's question"""
-    client = Groq(api_key=st.session_state.api_key)
+    client = Groq(api_key=groq_api_key)
     
     # Check if visualization is requested
     needs_viz = any(word in user_query.lower() for word in ['visualize', 'plot', 'graph', 'chart', 'show', 'display'])
@@ -232,7 +232,7 @@ def get_code_from_groq(meta, sample_data, user_query):
     messages = [system_message, user_message]
     
     completion = client.chat.completions.create(
-        model="deepseek-r1-distill-llama-70b",
+        model=st.session_state.selected_model,
         messages=messages,
         temperature=0.6,
         max_completion_tokens=4096,
@@ -300,9 +300,9 @@ def display_chat_history():
             if "figure" in message and message["figure"]:
                 st.plotly_chart(message["figure"], use_container_width=True)
 
-def get_corrected_code_from_groq(error_message, original_code, user_query, meta, sample_data):
+def get_corrected_code_from_groq(error_message, original_code, user_query, meta, sample_data, groq_api_key):
     """Get corrected code from Groq API based on the error"""
-    client = Groq(api_key=st.session_state.api_key)
+    client = Groq(api_key=groq_api_key)
     
     system_message = {
         "role": "system",
@@ -331,7 +331,7 @@ def get_corrected_code_from_groq(error_message, original_code, user_query, meta,
     messages = [system_message, user_message]
     
     completion = client.chat.completions.create(
-        model="deepseek-r1-distill-llama-70b",
+        model=st.session_state.selected_model,
         messages=messages,
         temperature=0.6,
         max_completion_tokens=4096,
@@ -343,7 +343,7 @@ def get_corrected_code_from_groq(error_message, original_code, user_query, meta,
     response = completion.choices[0].message.content
     return extract_code_block(response)
 
-def try_execute_with_retries(code, df, user_query, meta, sample_data, max_retries=3):
+def try_execute_with_retries(code, df, user_query, meta, sample_data, groq_api_key, max_retries=3):
     """Try to execute code with multiple retries on error"""
     attempt = 1
     last_error = None
@@ -365,7 +365,9 @@ def try_execute_with_retries(code, df, user_query, meta, sample_data, max_retrie
             })
             
             # Get corrected code
-            last_code = get_corrected_code_from_groq(error, last_code, user_query, meta, sample_data)
+            last_code = get_corrected_code_from_groq(
+                error, last_code, user_query, meta, sample_data, groq_api_key
+            )
             
         last_error = error
         attempt += 1
@@ -378,12 +380,32 @@ def main():
     
     # Sidebar for API key, example questions, and tips
     with st.sidebar:
-        st.markdown("### API Key")
-        st.session_state.api_key = st.text_input(
-            "Enter your Groq API key",
+        st.markdown("## Configuration")
+        groq_api_key = st.text_input(
+            "Enter your Groq API Key", 
             type="password",
-            value=st.session_state.api_key,
-            help="Your Groq API key is required to generate analysis code. You can obtain it from your Groq account."
+            help="Obtain your Groq API key by signing up at [Groq](https://console.groq.com/keys)",
+            key="api_key_input",
+            placeholder="Enter your API key here"
+        )
+        
+        # Add model selection dropdown
+        selected_model = st.selectbox(
+            "Select Groq Model",
+            options=[
+                "deepseek-r1-distill-llama-70b",
+                "llama3-70b-8192",
+                "llama3-8b-8192",
+                "mixtral-8x7b-32768",
+                "llama-3.3-70b-versatile",
+                "llama-3.3-70b-specdec", 
+                "llama-3.1-8b-instant",
+                "llama-guard-3-8b",
+                "gemma2-9b-it"
+            ],
+            index=0,
+            help="Choose which LLM model to use for analysis",
+            key="selected_model"
         )
         
         st.markdown("### Example Questions")
@@ -417,7 +439,7 @@ def main():
         st.success(f"Loaded {len(df):,} rows")
         
         # Data preview
-        with st.expander("Preview Data"):
+        with st.expander("Preview Data", expanded=True):
             st.dataframe(df.head(), use_container_width=True)
         
         # Clear chat button
@@ -428,7 +450,7 @@ def main():
     st.markdown("---")
     
     # Main chat interface
-    if uploaded_file is not None and st.session_state.api_key:
+    if uploaded_file is not None and groq_api_key:
         try:
             # Display chat history
             display_chat_history()
@@ -452,11 +474,11 @@ def main():
                 # Analysis progress using spinner
                 with st.spinner("Analyzing data..."):
                     # Get initial code from Groq
-                    code, needs_viz = get_code_from_groq(meta, sample_data, user_query)
+                    code, needs_viz = get_code_from_groq(meta, sample_data, user_query, groq_api_key)
                     
                     # Try to execute with retries
                     result, error, fig, final_code, attempts = try_execute_with_retries(
-                        code, df, user_query, meta, sample_data
+                        code, df, user_query, meta, sample_data, groq_api_key
                     )
                 
                 if error:
