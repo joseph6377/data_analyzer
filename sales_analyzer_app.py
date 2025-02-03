@@ -2,23 +2,23 @@ import streamlit as st
 import pandas as pd
 import os
 from groq import Groq
-from dotenv import load_dotenv
+# from dotenv import load_dotenv  # Remove dotenv import
 import tempfile
 import plotly.express as px
 import plotly.graph_objects as go
 import re
 
-# Disable watchdog if in production
-if st.runtime.exists():
-    import os
-    os.environ["STREAMLIT_SERVER_FILE_WATCHER_TYPE"] = "none"
-
-# Load environment variables (if any)
-load_dotenv()
+# Remove loading environment variables
+# load_dotenv()
+# GROQ_API_KEY = os.getenv("GROQ_API_KEY")
 
 # Initialize session state for chat history if it doesn't exist
 if 'chat_history' not in st.session_state:
     st.session_state.chat_history = []
+
+# Initialize session state for API key if it doesn't exist
+if 'api_key' not in st.session_state:
+    st.session_state.api_key = ""
 
 # Set page config
 st.set_page_config(
@@ -33,46 +33,46 @@ st.set_page_config(
     }
 )
 
-# Add custom CSS for dark theme
+# Add custom CSS for light theme
 st.markdown("""
     <style>
     /* Main app styling */
     .stApp {
-        background-color: #1E1E1E;
-        color: #E0E0E0;
+        background-color: #FFFFFF;
+        color: #000000;
     }
     
     /* Sidebar styling */
     section[data-testid="stSidebar"] {
-        background-color: #252526;
-        border-right: 1px solid #333333;
+        background-color: #F0F0F0;
+        border-right: 1px solid #CCCCCC;
         padding: 1rem;
     }
     
     /* Headers */
     h1 {
-        color: #E0E0E0 !important;
+        color: #000000 !important;
         font-family: -apple-system, BlinkMacSystemFont, sans-serif;
         font-weight: 600 !important;
         font-size: 2rem !important;
     }
     
     h2, h3 {
-        color: #E0E0E0 !important;
+        color: #000000 !important;
         font-family: -apple-system, BlinkMacSystemFont, sans-serif;
         font-weight: 500 !important;
     }
     
     /* Chat messages */
     .user-message {
-        background-color: #2D2D2D;
+        background-color: #E0E0E0;
         padding: 1rem;
         border-radius: 4px;
         margin: 0.5rem 0;
     }
     
     .assistant-message {
-        background-color: #323232;
+        background-color: #F0F0F0;
         padding: 1rem;
         border-radius: 4px;
         margin: 0.5rem 0;
@@ -80,61 +80,61 @@ st.markdown("""
     
     /* Code blocks */
     .stCodeBlock {
-        background-color: #1E1E1E !important;
-        border: 1px solid #333333 !important;
+        background-color: #F8F8F8 !important;
+        border: 1px solid #CCCCCC !important;
         border-radius: 4px !important;
     }
     
     /* Input fields */
     .stTextInput > div > div > input {
-        background-color: #2D2D2D !important;
-        color: #E0E0E0 !important;
-        border: 1px solid #333333 !important;
+        background-color: #FFFFFF !important;
+        color: #000000 !important;
+        border: 1px solid #CCCCCC !important;
         border-radius: 4px !important;
     }
     
     /* File uploader */
     .uploadedFile {
-        background-color: #2D2D2D !important;
-        color: #E0E0E0 !important;
-        border: 1px solid #333333 !important;
+        background-color: #FFFFFF !important;
+        color: #000000 !important;
+        border: 1px solid #CCCCCC !important;
         border-radius: 4px !important;
         padding: 1rem !important;
     }
     
     /* Buttons */
     .stButton > button {
-        background-color: #2D2D2D !important;
-        color: #E0E0E0 !important;
-        border: 1px solid #333333 !important;
+        background-color: #E0E0E0 !important;
+        color: #000000 !important;
+        border: 1px solid #CCCCCC !important;
         border-radius: 4px !important;
     }
     
     .stButton > button:hover {
-        background-color: #3D3D3D !important;
-        border: 1px solid #444444 !important;
+        background-color: #D0D0D0 !important;
+        border: 1px solid #BBBBBB !important;
     }
     
     /* Expander styling */
     .streamlit-expanderHeader {
-        background-color: #2D2D2D !important;
-        color: #E0E0E0 !important;
-        border: 1px solid #333333 !important;
+        background-color: #E0E0E0 !important;
+        color: #000000 !important;
+        border: 1px solid #CCCCCC !important;
         border-radius: 4px !important;
     }
     
     /* Success/Info/Warning messages */
     .stSuccess, .stInfo, .stWarning {
-        background-color: #2D2D2D !important;
-        color: #E0E0E0 !important;
-        border: 1px solid #333333 !important;
+        background-color: #E0E0E0 !important;
+        color: #000000 !important;
+        border: 1px solid #CCCCCC !important;
         border-radius: 4px !important;
     }
     
     /* Dataframe styling */
     .dataframe {
-        background-color: #2D2D2D !important;
-        color: #E0E0E0 !important;
+        background-color: #FFFFFF !important;
+        color: #000000 !important;
     }
     
     /* Hide Streamlit branding */
@@ -143,29 +143,29 @@ st.markdown("""
     
     /* Status messages */
     .stStatus {
-        background-color: #2D2D2D !important;
-        color: #E0E0E0 !important;
-        border: 1px solid #333333 !important;
+        background-color: #E0E0E0 !important;
+        color: #000000 !important;
+        border: 1px solid #CCCCCC !important;
     }
     
     /* Plotly chart background */
     .js-plotly-plot {
-        background-color: #2D2D2D !important;
+        background-color: #FFFFFF !important;
     }
     
     /* Markdown text */
     .markdown-text-container {
-        color: #E0E0E0 !important;
+        color: #000000 !important;
     }
     
     /* Links */
     a {
-        color: #4B9BFF !important;
+        color: #1E90FF !important;
     }
     
     /* Divider */
     hr {
-        border-color: #333333 !important;
+        border-color: #CCCCCC !important;
     }
     </style>
     """, unsafe_allow_html=True)
@@ -188,9 +188,9 @@ def extract_code_block(text):
         return match.group(1)
     return text
 
-def get_code_from_groq(meta, sample_data, user_query, groq_api_key):
+def get_code_from_groq(meta, sample_data, user_query):
     """Get Python code from Groq API based on user's question"""
-    client = Groq(api_key=groq_api_key)
+    client = Groq(api_key=st.session_state.api_key)
     
     # Check if visualization is requested
     needs_viz = any(word in user_query.lower() for word in ['visualize', 'plot', 'graph', 'chart', 'show', 'display'])
@@ -297,9 +297,9 @@ def display_chat_history():
             if "figure" in message and message["figure"]:
                 st.plotly_chart(message["figure"], use_container_width=True)
 
-def get_corrected_code_from_groq(error_message, original_code, user_query, meta, sample_data, groq_api_key):
+def get_corrected_code_from_groq(error_message, original_code, user_query, meta, sample_data):
     """Get corrected code from Groq API based on the error"""
-    client = Groq(api_key=groq_api_key)
+    client = Groq(api_key=st.session_state.api_key)
     
     system_message = {
         "role": "system",
@@ -340,7 +340,7 @@ def get_corrected_code_from_groq(error_message, original_code, user_query, meta,
     response = completion.choices[0].message.content
     return extract_code_block(response)
 
-def try_execute_with_retries(code, df, user_query, meta, sample_data, groq_api_key, max_retries=3):
+def try_execute_with_retries(code, df, user_query, meta, sample_data, max_retries=3):
     """Try to execute code with multiple retries on error"""
     attempt = 1
     last_error = None
@@ -362,7 +362,7 @@ def try_execute_with_retries(code, df, user_query, meta, sample_data, groq_api_k
             })
             
             # Get corrected code
-            last_code = get_corrected_code_from_groq(error, last_code, user_query, meta, sample_data, groq_api_key)
+            last_code = get_corrected_code_from_groq(error, last_code, user_query, meta, sample_data)
             
         last_error = error
         attempt += 1
@@ -373,49 +373,18 @@ def main():
     # Simple header without image
     st.title("Enterprise Data Analyzer")
     
-    # File uploader in sidebar
+    # Sidebar for API key, example questions, and tips
     with st.sidebar:
-        st.markdown("## Configuration")
-        groq_api_key = st.text_input(
-            "Enter your Groq API Key", 
+        st.markdown("### API Key")
+        st.session_state.api_key = st.text_input(
+            "Enter your Groq API key",
             type="password",
-            help="Obtain your Groq API key by signing up at [Groq](https://groq.com) and navigating to the API keys section."
+            value=st.session_state.api_key,
+            help="Your Groq API key is required to generate analysis code. You can obtain it from your Groq account."
         )
         
-        st.markdown("---")
-        
-        st.markdown("### File Source")
-        uploaded_file = st.file_uploader(
-            "Upload your CSV file",
-            type="csv",
-            help="Limit 200MB per file • CSV"
-        )
-        
-        if uploaded_file is not None:
-            # Load the data
-            df = load_data(uploaded_file)
-            st.success(f"Loaded {len(df):,} rows")
-            
-            # Data preview
-            with st.expander("Preview Data"):
-                st.dataframe(df.head(), use_container_width=True)
-            
-            # Check if Groq API key is provided
-            if not groq_api_key:
-                st.error("Groq API key is required to proceed. Please enter your API key in the sidebar. To obtain an API key, sign up at https://groq.com and navigate to the API keys section.")
-                st.stop()
-            
-            # Clear chat button
-            if st.button("Clear History"):
-                st.session_state.chat_history = []
-                st.rerun()
-        
-        st.markdown("---")
-        
-        # Example questions
+        st.markdown("### Example Questions")
         st.markdown("""
-        ### Example Questions
-        
         1. What are the total sales by product?
         2. Visualize monthly sales trends
         3. Show a pie chart of revenue distribution
@@ -431,8 +400,32 @@ def main():
             - Hover over data points for details
             """)
     
-    # Main chat interface
+    # File uploader in main section
+    st.markdown("### File Source")
+    uploaded_file = st.file_uploader(
+        "Upload your CSV file",
+        type="csv",
+        help="Limit 200MB per file • CSV"
+    )
+    
     if uploaded_file is not None:
+        # Load the data
+        df = load_data(uploaded_file)
+        st.success(f"Loaded {len(df):,} rows")
+        
+        # Data preview
+        with st.expander("Preview Data"):
+            st.dataframe(df.head(), use_container_width=True)
+        
+        # Clear chat button
+        if st.button("Clear History"):
+            st.session_state.chat_history = []
+            st.rerun()
+    
+    st.markdown("---")
+    
+    # Main chat interface
+    if uploaded_file is not None and st.session_state.api_key:
         try:
             # Display chat history
             display_chat_history()
@@ -450,14 +443,17 @@ def main():
                     "content": user_query
                 })
                 
+                # Display user query immediately
+                st.markdown(f'<div class="user-message"><strong>💬 You</strong><br>{user_query}</div>', unsafe_allow_html=True)
+                
                 # Analysis progress using spinner
                 with st.spinner("Analyzing data..."):
                     # Get initial code from Groq
-                    code, needs_viz = get_code_from_groq(meta, sample_data, user_query, groq_api_key)
+                    code, needs_viz = get_code_from_groq(meta, sample_data, user_query)
                     
                     # Try to execute with retries
                     result, error, fig, final_code, attempts = try_execute_with_retries(
-                        code, df, user_query, meta, sample_data, groq_api_key
+                        code, df, user_query, meta, sample_data
                     )
                 
                 if error:
@@ -485,20 +481,6 @@ def main():
                 
         except Exception as e:
             st.error(f"Error: {str(e)}")
-    else:
-        # Welcome message
-        st.info("👋 Welcome! Please upload a CSV file to begin.")
-        
-        # Show example format
-        st.markdown("""
-        ### Expected CSV Format
-        
-        ```
-        Product Name,Quantity Sold,Total Revenue,Date
-        Product A,100,5000,2024-01-01
-        Product B,150,7500,2024-01-01
-        ```
-        """)
 
 if __name__ == "__main__":
-    main() 
+    main()
