@@ -152,6 +152,9 @@ st.markdown("""
     .js-plotly-plot {
         background-color: #FFFFFF !important;
     }
+    .plotly {
+        background-color: #FFFFFF !important;
+    }
     
     /* Markdown text */
     .markdown-text-container {
