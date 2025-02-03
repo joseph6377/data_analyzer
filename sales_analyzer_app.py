@@ -211,7 +211,7 @@ def get_code_from_groq(meta, sample_data, user_query):
             "If creating a visualization:\n"
             "1. Use appropriate chart types based on the data and question\n"
             "2. Include proper titles, labels, and formatting\n"
-            "3. Use a color scheme that works well with dark theme\n"
+            "3. Use a color scheme that works well with light theme\n"
             "4. Store the figure in a variable named 'fig'\n"
         )
     }
