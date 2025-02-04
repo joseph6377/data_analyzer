@@ -408,16 +408,17 @@ def main():
             key="selected_model"
         )
         
-        st.markdown("### Example Questions")
+        st.markdown("### Follow these steps:")
         st.markdown("""
-        1. What are the total sales by product?
-        2. Visualize monthly sales trends
-        3. Show a pie chart of revenue distribution
-        4. Plot the top 5 products by quantity
-        5. Compare product performance
+        1. Enter your API key
+        2. Select the model you want to use
+        3. Upload your CSV file
+        4. Check the data preview
+        5. Ask a question about your data
+        6. See the analysis!
         """)
         
-        with st.expander("Tips"):
+        with st.expander("Tips",expanded=True):
             st.markdown("""
             - Use natural language to ask questions
             - Request visualizations using "show", "plot", "visualize"
@@ -506,6 +507,13 @@ def main():
                 
         except Exception as e:
             st.error(f"Error: {str(e)}")
+
+    # Add subtle footer
+    st.markdown("""
+    <div style='position: fixed; bottom: 10px; right: 10px; opacity: 0.5; font-size: 0.8em;'>
+        Built by Joseph Thekkekara <i>(or by an overworked AI? 😉)</i>
+    </div>
+    """, unsafe_allow_html=True)
 
 if __name__ == "__main__":
     main()
