@@ -410,12 +410,13 @@ def main():
         
         st.markdown("### Follow these steps:")
         st.markdown("""
-        1. Enter your API key
-        2. Select the model you want to use
-        3. Upload your CSV file
-        4. Check the data preview
-        5. Ask a question about your data
-        6. See the analysis!
+        1. [Create your own API key](https://console.groq.com/keys)  
+        2. Enter your API key above  
+        3. Select the model you want to use  
+        4. Upload your CSV file  
+        5. Check the data preview  
+        6. Ask a question about your data  
+        7. See the analysis!  
         """)
         
         with st.expander("Tips",expanded=True):
